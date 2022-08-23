@@ -1,36 +1,62 @@
+from datetime import datetime, time
+from dotenv import load_dotenv
+import requests
+import json
 import os
 
 load_dotenv()
-API_URL = os.environ.get("API_URL", "http://api:8000/api")
+API_URL = os.environ.get("API_URL", "http://habitat-api:8000/api")
 
 
-def add_reading(temp=None, hum=None):
-    return requests.post(
-        f"{API_URL}/reading/add/",
-        json=json.dumps(dict(temp=temp,hum=hum))
-    ).json()
+def convert_dt_to_iso(data):
+    for k, v in data.items():
+        if isinstance(v, datetime) or isinstance(v, time):
+            data[k] = v.isoformat()
+    return data
 
 
-def list_readings():
-    return requests.get(f"{API_URL}/reading/list/")
+def add_reading(temperature=None, humidity=None):
+    resp = requests.post(
+        f"{API_URL}/reading/",
+        json={"temperature": temperature, "humidity": humidity},
+    )
+    if resp.status_code == 201:
+        return resp.json()
 
 
-def find_reading_by_period(unit=None, time=None):
-    return requests.get(
-        f"{API_URL}/reading/find/period/",
-        json=json.dumps({"unit": unit, "time": time})
-    ).json()
+def get_reading():
+    resp = requests.get(f"{API_URL}/reading/")
+    if resp.status_code == 200:
+        return resp.json()
 
 
-def find_reading_by_range(dateFrom=None, dateTo=None):
-    return requests.get(
-        f"{API_URL}/reading/find/range/",
-        json=json.dumps({"dateFrom": dateFrom, "daetTo": dateTo})
-    ).json()
+def filter_readings(period=None, unit=None, date_from=None, date_to=None):
+    data = {}
+    if period is not None:
+        data.update({"period": period, "unit": unit})
+    elif date_from is not None:
+        data.update({"date_from": date_from, "date_to": date_to})
+
+    resp = requests.get(f"{API_URL}/readings/", json=data)
+    if resp.status_code == 200:
+        return resp.json()
 
 
 def get_config():
-    return requests.get(f"{API_URL}/config/get/").json()
+    resp = requests.get(f"{API_URL}/config/")
+    if resp.status_code == 200:
+        return resp.json()
+
+
+def set_config(data):
+    data = convert_dt_to_iso(data)
+    resp = requests.post(f"{API_URL}/config/", json=data)
+    print(resp.json())
+    if resp.status_code == 201:
+        return resp.json()
+
 
 def new_config():
-    return requests.get(f"{API_URL}/config/new/").json()
+    resp = requests.get(f"{API_URL}/config/new/")
+    if resp.status_code == 200:
+        return resp.json()
