@@ -1,8 +1,8 @@
 from datetime import datetime
-import pickle
 import redis
+import json
 
-from api.blueprints import utils as api_tools
+from habitat_tools import APITools
 
 # Rename dataclasses to protect against any future 
 # scenario where models are used here as well
@@ -16,6 +16,7 @@ DC_LIBRARY = {
     "reading": data_read,
     "light": data_light
 }
+api_tools = APITools()
 
 class RedisWrapper:
     def connect(self):
@@ -23,50 +24,37 @@ class RedisWrapper:
         return redis.StrictRedis(connection_pool=connection_pool)
 
 
+def show_redis():
+    redis = RedisWrapper().connect()
+    return redis.keys()
+
+    
 def get_redis(key, reset=False):
     redis = RedisWrapper().connect()
+    dc = DC_LIBRARY.get(key)
     r = redis.get(key)
 
-    # If first time redis key is being set - only really appropriate to config
     if r is None:
         data = None
-        # TODO: Delete redis and see if this is working or not?
         if key == "environment":
-            try:
-                if not reset:
-                    data = api_tools.get_config()
-                if reset or not data:
-                    data = api_tools.new_config()
-            except Exception:
-                pass
+            if not reset:
+                data = api_tools.get_config()
+            if reset or data is None:
+                data = api_tools.new_config()
+
+            data = dc().from_json(json.dumps(data))
+            
+        elif key == "reading":
+            data = data_read()
 
         if data is not None:
-            update_redis(key, data)
+            set_redis(key, data)
             get_redis(key)
-    
-    if r is None:
-        return r
 
-    return pickle.loads(r)
+    if r is not None:
+        return dc().from_json(r.decode("utf-8"))
 
 
-def set_redis(key, obj):
+def set_redis(key, data):
     redis = RedisWrapper().connect()
-    redis.set(key, pickle.dumps(obj))
-
-
-def update_redis(key, data):
-    dc = DC_LIBRARY.get(key)
-    if dc is None:
-        # TODO: Throw exception here?!
-        return
-
-    dc = dc()
-    for k, v in data.items():
-        if hasattr(dc, k):
-            try:
-                v = datetime.strptime(v, "%H:%M:%S").time()
-            except Exception:
-                pass
-            setattr(dc, k, v)
-    set_redis(key, dc)
+    redis.set(key, data.to_json())
