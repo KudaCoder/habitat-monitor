@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 from modules.reminder import Reminder
+from modules.control import Control
 from modules.monitor import Monitor
 from modules.buzzer import Buzzer
-from modules.display import LCD
 from modules.lights import Lights
+from modules.display import LCD
 from modules.fans import Fans
 
-from comm.redis import get_redis
+from comm.redis import get_redis, show_redis
+
 from datetime import datetime, time
 from multiprocessing import Process
+from time import sleep
 
 
 class HabitatMonitor:
-    def __init__(self):
-        self.lcd = LCD()
-        self.reminder = Reminder()
+    def __init__(self, lcd, reminder):
+        self.lcd = lcd
+        self.reminder = reminder
         self.reminder.start_reminder()
 
     def display(self):
@@ -22,8 +25,11 @@ class HabitatMonitor:
 
         while True:
             reading = get_redis("reading")
-            line_1 = f"Temp: {reading.temp} {deg_symbol}C" + "\n"
-            line_2 = f"Humidity: {reading.hum}% RH"
+            if reading is None:
+                continue
+                
+            line_1 = f"    Temp: {reading.temperature}{deg_symbol}C" + "\n"
+            line_2 = f"Humidity: {reading.humidity}% RH"
             self.lcd.display((line_1, line_2))
 
             if self.reminder.food_reminder is not None:
@@ -35,20 +41,24 @@ class HabitatMonitor:
         self.lcd.destroy()
 
 def run():
-    print('Program is starting ... ')
+    print('Program is starting ... \n')
+
+    print("Warming up containers...\n")
+    test_redis()
 
     sub_processes = []
-
     monitor = Monitor()
     lights = Lights()
     fans = Fans()
+    control = Control(lights, fans)
     sub_processes.append(Process(target=monitor.monitor_temp_hum))
-    sub_processes.append(Process(target=lights.control))
-    sub_processes.append(Process(target=fans.control))
+    sub_processes.append(Process(target=control.run))
     for p in sub_processes:
         p.start()
 
-    habitat = HabitatMonitor()
+    lcd = LCD()
+    reminder = Reminder()
+    habitat = HabitatMonitor(lcd, reminder)
     try:
         print("Habitat running...")
         habitat.display()
@@ -65,8 +75,19 @@ def run():
         print("Exiting...Goodbye!")
 
 
+def test_redis():
+    interval = 5
+    retries = 2
+
+    for _ in range(retries):
+        try:
+            test_config = get_redis("environment")
+            assert hasattr(test_config, "lights_on_time")
+            print("Success!!...\n")
+            break
+        except Exception:
+            sleep(interval)
+
+
 if __name__ == '__main__':
-
-    
-
     run()
