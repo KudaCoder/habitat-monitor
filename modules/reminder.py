@@ -1,5 +1,5 @@
-from buzzer import Buzzer
-from display import LCD
+# from .buzzer import Buzzer
+from .display import LCD
 
 import threading
 from datetime import datetime, time
@@ -8,7 +8,7 @@ from time import sleep
 class Reminder:
     def __init__(self):
         self.lcd = LCD()
-        self.buzzer = Buzzer()
+        # self.buzzer = Buzzer()
 
         self.water_reminder = None
         self.food_reminder = None
@@ -23,22 +23,22 @@ class Reminder:
         self.lcd.clear()
         self.lcd.display([message])
 
-        self.buzzer.buzzer_active = True
-        buzzer_thread = threading.Thread(target=self.buzzer.loop, daemon=True)
-        buzzer_thread.start()
+        # self.buzzer.buzzer_active = True
+        # buzzer_thread = threading.Thread(target=self.buzzer.loop, daemon=True)
+        # buzzer_thread.start()
 
         # Approx 20 seconds of reminder
         for _ in range(0, 10):
-            if not self.buzzer.buzzer_active:
-                break
+            # if not self.buzzer.buzzer_active:
+            #     break
             self.lcd.backlight(1)
             sleep(0.6)
             self.lcd.backlight(0)
             sleep(1.4)
 
         # If button was not pressed to stop reminder
-        if self.buzzer.buzzer_active:
-            self.buzzer.buzzer_active = False
+        # if self.buzzer.buzzer_active:
+        #     self.buzzer.buzzer_active = False
 
         self.lcd.clear()
         self.reset_reminder(category)
@@ -46,8 +46,9 @@ class Reminder:
     def reminder(self, period):
         sleep(period)
 
-        now_time = datetime.now().time()
-        day = datetime.now().weekday()
+        now = datetime.utcnow()
+        now_time = now.time()
+        day = now.weekday()
         if time(12, 00) <= now_time <= time(12, 30):
             # Reminder to water snake at 12pm each day
             self.water_reminder = True
@@ -64,6 +65,7 @@ class Reminder:
         thread.start()
     
     def destroy(self):
-        self.buzzer.destroy()
+        # self.buzzer.destroy()
+        pass
 
 
