@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, time
+from . import api_tools
 import redis
 import json
 
-from habitat_tools import APITools
+# from habitat_tools import APITools
 
 # Rename dataclasses to protect against any future 
 # scenario where models are used here as well
@@ -16,7 +17,17 @@ DC_LIBRARY = {
     "reading": data_read,
     "light": data_light
 }
-api_tools = APITools()
+# api_tools = APITools()
+env_config = dict(
+    lights_on_time=time(7, 0).isoformat(),
+    lights_off_time=time(19, 0).isoformat(),
+    day_h_sp=35.0,
+    day_l_sp=29.0,
+    night_h_sp=27.0,
+    night_l_sp=25.0,
+    humidity_h_sp=60.0,
+    humidity_l_sp=55.0,
+)
 
 class RedisWrapper:
     def connect(self):
@@ -42,7 +53,7 @@ def get_redis(key, reset=False):
             if reset or data is None:
                 data = api_tools.new_config()
 
-            data = dc().from_json(json.dumps(data))
+            data = dc.from_json(json.dumps(data))
             
         elif key == "reading":
             data = data_read()
@@ -52,7 +63,9 @@ def get_redis(key, reset=False):
             get_redis(key)
 
     if r is not None:
-        return dc().from_json(r.decode("utf-8"))
+        return dc.from_json(r.decode("utf-8"))
+
+    return data
 
 
 def set_redis(key, data):

@@ -40,10 +40,10 @@ class Fans:
             self.supply_on()
         else:
             self.supply_off()
-        if extract:
-            self.extract_on()
-        else:
-            self.extract_off()
+        # if extract:
+        #     self.extract_on()
+        # else:
+        #     self.extract_off()
 
     def destroy(self):
         GPIO.cleanup()

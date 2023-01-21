@@ -5,7 +5,7 @@ import json
 import os
 
 load_dotenv()
-API_URL = os.environ.get("API_URL", "http://habitat-api:8000/api")
+API_URL = os.environ.get("API_URL", "http://habitat-api:5000/api")
 
 
 def convert_dt_to_iso(data):
@@ -57,6 +57,6 @@ def set_config(data):
 
 
 def new_config():
-    resp = requests.get(f"{API_URL}/config/new/")
+    resp = requests.get(f"{API_URL}/config/default/")
     if resp.status_code == 200:
         return resp.json()

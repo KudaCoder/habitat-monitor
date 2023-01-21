@@ -92,19 +92,16 @@ class Control:
             self.return_to_cool = False
 
     def day_config(self, temp):
-        if temp < (self.l_sp - 1.0):
+        # if temp < (self.l_sp - 1.0):
+        #     self.small_light = True
+        #     self.big_light = True
+        #     self.return_to_heat = True
+        if temp < self.l_sp:
             self.small_light = True
             self.big_light = True
-            self.return_to_heat = False
-        elif temp < self.l_sp and not self.return_to_heat:
-            self.small_light = True
-            self.big_light = False
-            self.return_to_heat = True
-        elif temp >= self.l_sp:
-            self.small_light = True
-            self.big_light = False
-            self.return_to_heat = True
+        elif temp >= (self.h_sp - 1.0):
+            self.small_light = False
+            self.big_light = True
         elif temp > self.h_sp:
             self.big_light = False
             self.small_light = False
-            self.return_to_cool = True

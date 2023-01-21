@@ -12,6 +12,7 @@ from comm.redis import get_redis, show_redis
 from datetime import datetime, time
 from multiprocessing import Process
 from time import sleep
+import requests
 
 
 class HabitatMonitor:
@@ -44,7 +45,7 @@ def run():
     print('Program is starting ... \n')
 
     print("Warming up containers...\n")
-    test_redis()
+    test_connections()
 
     sub_processes = []
     monitor = Monitor()
@@ -75,7 +76,7 @@ def run():
         print("Exiting...Goodbye!")
 
 
-def test_redis():
+def test_connections():
     interval = 5
     retries = 2
 
@@ -83,6 +84,8 @@ def test_redis():
         try:
             test_config = get_redis("environment")
             assert hasattr(test_config, "lights_on_time")
+            resp = requests.get("http://habitat-api/api/config")
+            resp.raise_for_status()
             print("Success!!...\n")
             break
         except Exception:
